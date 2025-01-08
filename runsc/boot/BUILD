@@ -133,6 +133,7 @@ go_library(
         "//runsc/profile",
         "//runsc/specutils",
         "//runsc/specutils/seccomp",
+        "//runsc/specvalidation",
         "//runsc/version",
         "@com_github_opencontainers_runtime_spec//specs-go:go_default_library",
         "@com_github_syndtr_gocapability//capability:go_default_library",

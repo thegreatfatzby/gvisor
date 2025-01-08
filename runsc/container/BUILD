@@ -99,6 +99,7 @@ go_test(
         "//runsc/config",
         "//runsc/flag",
         "//runsc/specutils",
+        "//runsc/specvalidation",
         "//test/metricclient",
         "@com_github_cenkalti_backoff//:go_default_library",
         "@com_github_google_go_cmp//cmp:go_default_library",
