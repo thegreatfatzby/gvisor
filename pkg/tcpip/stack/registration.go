@@ -171,6 +171,58 @@ type PacketEndpoint interface {
 	HandlePacket(nicID tcpip.NICID, netProto tcpip.NetworkProtocolNumber, pkt *PacketBuffer)
 }
 
+// MappablePacketEndpoint is a packet endpoint that supports forwarding its
+// packets to a PacketMMapEndpoint.
+type MappablePacketEndpoint interface {
+	PacketEndpoint
+
+	// ConfigurePacketMMap configures the endpoint to use a memory mapped endpoint
+	// handler ep. All packets sent or received via this endpoint will be handled
+	// by the PacketMMapEndpoint.
+	ConfigurePacketMMap(ep PacketMMapEndpoint)
+}
+
+// PacketMMapCopyHandler is a function that is called when a packet received is
+// too large for the buffer size specified for the memory mapped endpoint. In
+// this case, the packet is copied and passed to the PacketMMapCopyHandler.
+type PacketMMapCopyHandler func(nicID tcpip.NICID, netProto tcpip.NetworkProtocolNumber, pkt *PacketBuffer)
+
+// InitPacketMMapOpts are the options for initializing a PacketMMapEndpoint.
+type InitPacketMMapOpts struct {
+	RxReq, TxReq *tcpip.TpacketReq
+	Cooked       bool
+	Stack        *Stack
+	Stats        *tcpip.TransportEndpointStats
+	Wq           *waiter.Queue
+	CopyHandler  PacketMMapCopyHandler
+}
+
+// PacketMMapEndpoint is the interface implemented by endpoints to handle memory
+// mapped packets over the packet transport protocol (PACKET_MMAP).
+type PacketMMapEndpoint interface {
+	// HandlePacket is called by the stack when new packets arrive that
+	// match the endpoint.
+	//
+	// Implementers should treat packet as immutable and should copy it
+	// before before modification.
+	//
+	// linkHeader may have a length of 0, in which case the PacketEndpoint
+	// should construct its own ethernet header for applications.
+	//
+	// HandlePacket may modify pkt.
+	HandlePacket(nicID tcpip.NICID, netProto tcpip.NetworkProtocolNumber, pkt *PacketBuffer)
+
+	// Close releases any resources associated with the endpoint.
+	Close()
+
+	// Readiness returns the events that the endpoint is ready for.
+	Readiness(mask waiter.EventMask) waiter.EventMask
+
+	// InitPacketMMap initializes the endpoint. It must be called before any other
+	// methods.
+	InitPacketMMap(opts InitPacketMMapOpts) tcpip.Error
+}
+
 // UnknownDestinationPacketDisposition enumerates the possible return values from
 // HandleUnknownDestinationPacket().
 type UnknownDestinationPacketDisposition int
