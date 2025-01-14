@@ -528,9 +528,20 @@ func (s *Sandbox) Restore(conf *config.Config, cid string, imagePath string, dir
 	}
 	defer conn.Close()
 
-	// Configure the network.
-	if err := setupNetwork(conn, s.Pid.load(), conf); err != nil {
-		return fmt.Errorf("setting up network: %v", err)
+	if conf.Network == config.NetworkNone || conf.Network == config.NetworkSandbox {
+		args, err := setupRestoreNetworkArgs(s.Pid.load(), conf)
+		if err != nil {
+			return fmt.Errorf("setting restore network args: %v", err)
+		}
+		// Store the network args in the loader.
+		if err := conn.Call(boot.ContMgrStoreNetworkArgs, &args, nil); err != nil {
+			return fmt.Errorf("storing network args %q: %v", cid, err)
+		}
+	} else {
+		// Configure the network.
+		if err := setupNetwork(conn, s.Pid.load(), conf); err != nil {
+			return fmt.Errorf("setting up network: %v", err)
+		}
 	}
 
 	// Restore the container and start the root container.

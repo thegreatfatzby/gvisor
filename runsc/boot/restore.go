@@ -714,6 +714,22 @@ func (r *restorer) restore(l *Loader, unsafeSkipRestoreSpecValidation bool) erro
 	// Release `l.mu` before calling into callbacks.
 	cu.Clean()
 
+	if eps, ok := l.k.RootNetworkNamespace().Stack().(*netstack.Stack); ok {
+		// The network stack will be loaded from the state file, we do
+		// not need this network stack anymore.
+		oldInetStack.Destroy()
+
+		n := &Network{
+			Stack:  eps.Stack,
+			Kernel: l.k,
+		}
+		if err := n.CreateLinksAndRoutes(l.networkArgs, nil); err != nil {
+			return fmt.Errorf("restore network error: %w", err)
+		}
+		log.Infof("network Args: %+v", l.networkArgs)
+		l.k.RootNetworkNamespace().Stack().Restore()
+	}
+
 	// r.restoreDone() signals and waits for the sandbox to start.
 	if err := r.restoreDone(); err != nil {
 		return fmt.Errorf("restorer.restoreDone callback failed: %w", err)

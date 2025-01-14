@@ -120,6 +120,10 @@ const (
 
 	// ContMgrContainerRuntimeState returns the runtime state of a container.
 	ContMgrContainerRuntimeState = "containerManager.ContainerRuntimeState"
+
+	// ContMgrStoreNetworkArgs stores the network config which are required
+	// during restore in the loader.
+	ContMgrStoreNetworkArgs = "containerManager.StoreNetworkArgs"
 )
 
 const (
@@ -941,5 +945,10 @@ func (cm *containerManager) Mount(args *MountArgs, _ *struct{}) error {
 func (cm *containerManager) ContainerRuntimeState(cid *string, state *ContainerRuntimeState) error {
 	log.Debugf("containerManager.ContainerRuntimeState: cid: %s", *cid)
 	*state = cm.l.containerRuntimeState(*cid)
+	return nil
+}
+
+func (cm *containerManager) StoreNetworkArgs(args *CreateLinksAndRoutesArgs, _ *struct{}) error {
+	cm.l.networkArgs = args
 	return nil
 }
