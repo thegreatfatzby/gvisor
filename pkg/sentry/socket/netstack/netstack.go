@@ -51,6 +51,7 @@ import (
 	"gvisor.dev/gvisor/pkg/sentry/kernel"
 	"gvisor.dev/gvisor/pkg/sentry/kernel/auth"
 	"gvisor.dev/gvisor/pkg/sentry/ktime"
+	"gvisor.dev/gvisor/pkg/sentry/memmap"
 	"gvisor.dev/gvisor/pkg/sentry/socket"
 	"gvisor.dev/gvisor/pkg/sentry/socket/netfilter"
 	epb "gvisor.dev/gvisor/pkg/sentry/socket/netstack/events_go_proto"
@@ -317,6 +318,28 @@ const DefaultTTL = 64
 const sizeOfInt32 int = 4
 
 var errStackType = syserr.New("expected but did not receive a netstack.Stack", errno.EINVAL)
+
+// mappableEndpoint is the interface implemented by endpoints that support
+// mmap.
+type mappableEndpoint interface {
+	// ConfigureMMap implements vfs.FileDescriptionImpl.ConfigureMMap.
+	ConfigureMMap(ctx context.Context, opts *memmap.MMapOpts) error
+
+	// AddMapping implements memmap.Mappable.AddMapping.
+	AddMapping(context.Context, memmap.MappingSpace, hostarch.AddrRange, uint64, bool) error
+
+	// RemoveMapping implements memmap.Mappable.RemoveMapping.
+	RemoveMapping(context.Context, memmap.MappingSpace, hostarch.AddrRange, uint64, bool)
+
+	// CopyMapping implements memmap.Mappable.CopyMapping.
+	CopyMapping(context.Context, memmap.MappingSpace, hostarch.AddrRange, hostarch.AddrRange, uint64, bool) error
+
+	// Translate implements memmap.Mappable.Translate.
+	Translate(context.Context, memmap.MappableRange, memmap.MappableRange, hostarch.AccessType) ([]memmap.Translation, error)
+
+	// InvalidateUnsavable implements memmap.Mappable.InvalidateUnsavable.
+	InvalidateUnsavable(context.Context) error
+}
 
 // commonEndpoint represents the intersection of a tcpip.Endpoint and a
 // transport.Endpoint.
